@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>We Weave Words | A Closed Collective</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Add Supabase JS Library -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,200..900;1,200..900&family=Inter:wght@100..900&display=swap" rel="stylesheet">
+<style>
+:root { 
+--light-bg: #f3ebe0; 
+--light-text: #550000; 
+--dark-bg: #000000; 
+--dark-text: #f3ebe0;
+}
+
+body { 
+font-family: 'Inter', sans-serif; 
+transition: background-color 0.5s ease, color 0.5s ease; 
+overflow-x: hidden; 
+}
+
+/* Mode Styles */
+body.light-mode { background-color: var(--light-bg); color: var(--light-text); }
+body.light-mode .glass { background-color: rgba(243, 235, 224, 0.85); border-bottom-color: rgba(85, 0, 0, 0.1); }
+body.light-mode .btn-primary { background-color: var(--light-text); color: var(--light-bg); }
+body.light-mode .border-current-alpha { border-color: rgba(85, 0, 0, 0.15); }
+body.light-mode .bg-current-alpha { background-color: rgba(85, 0, 0, 0.03); }
+
+body.dark-mode { background-color: var(--dark-bg); color: var(--dark-text); }
+body.dark-mode .glass { background-color: rgba(0, 0, 0, 0.85); border-bottom-color: rgba(243, 235, 224, 0.1); }
+body.dark-mode .btn-primary { background-color: var(--dark-text); color: var(--dark-bg); }
+body.dark-mode .border-current-alpha { border-color: rgba(243, 235, 224, 0.15); }
+body.dark-mode .bg-current-alpha { background-color: rgba(243, 235, 224, 0.05); }
+
+.font-serif { font-family: 'Crimson Pro', serif; }
+.hide { display: none !important; }
+.glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.view-transition { animation: fadeIn 0.6s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+input, textarea, select { outline: none; background: transparent !important; color: inherit; }
+select option { background: var(--light-bg); color: var(--light-text); }
+body.dark-mode select option { background: var(--dark-bg); color: var(--dark-text); }
+
+.nav-item { transition: opacity 0.3s ease; cursor: pointer; }
+
+#publish-success { 
+position: absolute;
+inset: 0;
+z-index: 20;
+display: flex;
+align-items: center;
+justify-content: center;
+border-radius: 2.5rem;
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.4s ease;
+}
+body.light-mode #publish-success { background-color: var(--light-bg); }
+body.dark-mode #publish-success { background-color: var(--dark-bg); }
+#publish-success.show { opacity: 1; pointer-events: auto; }
+
+.manuscript-box { 
+border: 1px solid currentColor; 
+border-radius: 1.5rem;
+padding: 2.5rem;
+margin-bottom: 2rem;
+transition: all 0.3s ease;
+}
+
+.active-filter { opacity: 1 !important; border-bottom: 2px solid currentColor; }
+
+.interaction-btn { 
+display: flex; 
+align-items: center; 
+gap: 0.5rem; 
+font-size: 11px; 
+text-transform: uppercase; 
+letter-spacing: 0.1em; 
+font-weight: 700;
+opacity: 0.4;
+transition: opacity 0.2s ease;
+}
+.interaction-btn:hover { opacity: 1; }
+.liked { color: #cc0000; opacity: 1; }
+
+.comment-item { border-top: 1px solid rgba(128,128,128,0.1); padding-top: 1rem; margin-top: 1rem; }
+</style>
+</head>
+<body class="light-mode" id="body">
+
+<!-- Navigation -->
+<nav class="fixed top-0 w-full z-50 transition-all duration-500 border-b glass h-16" id="navbar">
+<div class="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
+<div class="text-lg md:text-xl font-serif font-bold tracking-tight cursor-pointer hover:opacity-70 transition-opacity" onclick="showView('home')">
+We Weave Words
+</div>
+
+<div class="flex items-center space-x-3 md:space-x-10">
+<div class="flex items-center space-x-4 md:space-x-8 text-sm font-medium tracking-wide">
+<button onclick="showView('publications')" class="nav-item opacity-40 hover:opacity-100 flex items-center" id="nav-publications">
+<span class="hidden md:inline">Publications</span>
+<i data-lucide="book-open" class="w-5 md:hidden"></i>
+</button>
+<button onclick="showView('about')" class="nav-item opacity-40 hover:opacity-100 flex items-center" id="nav-about">
+<span class="hidden md:inline">Collective</span>
+<i data-lucide="users" class="w-5 md:hidden"></i>
+</button>
+</div>
+
+<div class="flex items-center space-x-2 md:space-x-4 border-l border-current-alpha pl-3 md:pl-10">
+<button onclick="toggleDarkMode()" class="opacity-40 hover:opacity-100 transition-opacity p-1" id="theme-toggle">
+<i data-lucide="moon" class="w-[18px]"></i>
+</button>
+<button id="admin-nav-btn" onclick="showView('admin')" class="btn-primary px-3 py-2 md:px-5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all">
+<span class="hidden sm:inline" id="admin-btn-text">Author Entrance</span>
+<i data-lucide="key" class="w-3 sm:hidden" id="admin-btn-icon"></i>
+</button>
+</div>
+</div>
+</div>
+</nav>
+
+<main class="pt-16 min-h-screen">
+<!-- Home View -->
+<section id="view-home" class="view view-transition">
+<!-- Hero -->
+<div class="h-[70vh] flex flex-col items-center justify-center text-center px-6 relative">
+<h1 class="text-5xl md:text-8xl font-serif font-light mb-6 tracking-tight">We Weave <span class="italic font-medium">Words</span></h1>
+<p class="text-lg md:text-2xl font-light opacity-60 max-w-2xl font-serif">Where thought dissolves into language.</p>
+<button onclick="showView('publications')" class="mt-12 group flex items-center gap-3 px-10 py-4 btn-primary rounded-full hover:scale-105 transition-all text-[10px] font-bold uppercase tracking-widest">
+Explore Archives <i data-lucide="arrow-right" class="w-3.5 group-hover:translate-x-1 transition-transform"></i>
+</button>
+</div>
+
+<!-- Our Purpose Section -->
+<div class="max-w-4xl mx-auto px-6 py-24 border-t border-current-alpha">
+<h2 class="text-3xl md:text-5xl font-serif italic mb-10">Our Purpose</h2>
+<div class="space-y-8 text-xl md:text-2xl font-serif leading-relaxed opacity-70">
+<p>We Weave Words is a sanctuary for deliberate thought. In an age of instant reactions, we choose the slow labor of weaving—taking complex threads of history, philosophy, and human nature and tying them into cohesive reflections.</p>
+<p>This platform serves as a digital vault for six distinct voices. We invite you to explore our archives not as a source of quick information, but as a space for contemplative engagement.</p>
+</div>
+</div>
+
+<!-- Core Principles Section -->
+<div class="max-w-4xl mx-auto px-6 pb-32">
+<h2 class="text-3xl md:text-5xl font-serif italic mb-16">Core Principles</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+<div class="space-y-4">
+<span class="font-serif italic text-4xl opacity-20">01</span>
+<h4 class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50">Preservation</h4>
+<p class="font-serif italic text-lg opacity-80">To safeguard intellectual curiosity against the erosion of modern brevity.</p>
+</div>
+<div class="space-y-4">
+<span class="font-serif italic text-4xl opacity-20">02</span>
+<h4 class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50">Dialogue</h4>
+<p class="font-serif italic text-lg opacity-80">To create a bridge between student inquiry and global understanding.</p>
+</div>
+<div class="space-y-4">
+<span class="font-serif italic text-4xl opacity-20">03</span>
+<h4 class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50">Nuance</h4>
+<p class="font-serif italic text-lg opacity-80">To honor the gray areas where most of the world's truths are hidden.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Publications View -->
+<section id="view-publications" class="view hide max-w-5xl mx-auto px-6 py-24">
+<h1 class="text-5xl md:text-6xl font-serif mb-12">The Archives</h1>
+<div class="flex flex-wrap gap-3 mb-12 border-b border-current-alpha pb-10" id="category-filters"></div>
+
+<div id="publications-list" class="space-y-12">
+<div class="py-40 text-center opacity-30 font-serif italic text-xl">
+Searching the digital vault...
+</div>
+</div>
+</section>
+
+<!-- Collective View -->
+<section id="view-about" class="view hide max-w-7xl mx-auto px-6 py-24">
+<div class="max-w-4xl mb-24">
+<h1 class="text-5xl md:text-7xl font-serif mb-8">The Collective</h1>
+<p class="text-2xl font-serif opacity-50 italic leading-relaxed">Six minds, one loom. Dedicated to the preservation of nuance.</p>
+</div>
+
+<!-- Writers Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-12 mb-40" id="authors-grid"></div>
+
+<!-- Secluded Tech Specialist Section -->
+<div class="border-t border-current-alpha pt-24 max-w-2xl">
+<h4 class="text-[10px] font-bold uppercase tracking-[0.4em] opacity-30 mb-12">Technical Infrastructure</h4>
+<div class="group">
+<h3 class="text-3xl font-serif italic mb-4">Yashika Puri</h3>
+<p class="text-[11px] font-bold uppercase tracking-widest opacity-40 mb-4 italic">Our Tech Expert</p>
+<p class="text-lg opacity-60 font-serif italic leading-relaxed">A High School student, science student, and tech enthusiast who thrives on exploring new areas. Yashika ensures the digital loom remains steady, bridging the gap between intricate code and creative expression.</p>
+</div>
+</div>
+</section>
+
+<!-- Login View -->
+<section id="view-admin" class="view hide min-h-[70vh] flex flex-col items-center justify-center p-6">
+<div class="max-w-md w-full p-12 rounded-[2.5rem] border border-current-alpha bg-current-alpha">
+<h2 class="text-xl font-serif text-center mb-10 tracking-widest uppercase opacity-60">Security Protocol</h2>
+<input type="password" id="passcode-input" placeholder="•••••" class="w-full p-5 rounded-2xl mb-6 bg-transparent border border-current-alpha text-center text-2xl tracking-[0.5em] text-inherit">
+<div id="login-error" class="text-[9px] uppercase font-bold text-center mb-6 hide text-red-700">Incorrect Passkey.</div>
+<button onclick="handleLogin()" class="w-full py-5 btn-primary rounded-2xl font-bold uppercase text-[10px] tracking-[0.3em]">Authenticate</button>
+</div>
+</section>
+
+<!-- Dashboard View -->
+<section id="view-dashboard" class="view hide max-w-7xl mx-auto px-6 py-24">
+<div class="flex justify-between items-end mb-16">
+<div>
+<h1 class="text-4xl font-serif mb-2">The Manuscript Vault</h1>
+<p class="opacity-50 text-sm uppercase tracking-widest">Privileged Access Granted</p>
+</div>
+<button onclick="logout()" class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100">
+<i data-lucide="log-out" class="w-3"></i> Sign Out
+</button>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<div class="lg:col-span-2 p-10 rounded-[2.5rem] border border-current-alpha bg-current-alpha relative overflow-hidden">
+<h3 class="font-serif text-xl mb-8 italic">New Weaving</h3>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+<div>
+<label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Identify Yourself</label>
+<select id="manuscript-author" class="w-full border-b border-current-alpha py-2 font-serif italic text-lg cursor-pointer">
+<option value="" disabled selected>Choose Author...</option>
+<option value="Saar Tokas">Saar Tokas</option>
+<option value="Guransh Khattar">Guransh Khattar</option>
+<option value="Diva Arora">Diva Arora</option>
+<option value="Shrre">Shrre</option>
+<option value="Ishita Shah">Ishita Shah</option>
+</select>
+</div>
+<div>
+<label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Select Category</label>
+<select id="manuscript-category" class="w-full border-b border-current-alpha py-2 font-serif italic text-lg cursor-pointer">
+<option value="" disabled selected>Choose a category...</option>
+<option value="Philosophy">Philosophy</option>
+<option value="History">History</option>
+<option value="Psychology">Psychology</option>
+<option value="Current Affairs">Current Affairs</option>
+<option value="Literature">Literature</option>
+</select>
+</div>
+</div>
+
+<input type="text" id="manuscript-title" placeholder="Title of reflection..." class="w-full bg-transparent border-b border-current-alpha py-4 mb-8 text-2xl font-serif italic text-inherit">
+<textarea id="manuscript-content" placeholder="Begin weaving your thoughts..." class="w-full bg-transparent border-b border-current-alpha py-4 mb-8 h-64 font-serif text-lg leading-relaxed text-inherit"></textarea>
+
+<button onclick="executePublish()" class="px-10 py-4 btn-primary rounded-full text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95" id="publish-btn">
+Secure to Vault
+</button>
+
+<div id="publish-success">
+<div class="text-center p-8">
+<i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-4"></i>
+<h4 class="text-2xl font-serif italic mb-2">Manuscript Secured</h4>
+<p class="text-sm opacity-60 mb-6 tracking-wide">The thread has been woven into the digital archive.</p>
+<div class="flex flex-col gap-4 items-center">
+<button onclick="resetVault()" class="text-[10px] font-bold uppercase tracking-widest border-b border-current-alpha pb-1">Weave Another</button>
+<button onclick="showView('publications')" class="text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100">View Public Archive</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+
+<footer class="py-20 border-t border-current-alpha text-center opacity-40 mt-32">
+<p class="font-serif italic text-lg mb-4">"Language is the thread, thought is the needle."</p>
+<p class="text-[10px] uppercase tracking-[0.3em]">© 2026 We Weave Words · A Closed Collective · All rights reserved</p>
+</footer>
+
+<script>
+// --- SUPABASE SETUP ---
+const supabaseUrl = 'https://kvoxbfynuqxmdljjomad.supabase.co';
+const supabaseKey = 'sb_publishable_tTNxFRRnPuVWLF6oRHxUlQ_UVd7GJhV';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// IMPORTANT: CHANGE THIS TO MATCH YOUR EXACT SUPABASE TABLE NAME
+const TABLE_NAME = 'manuscripts'; 
+
+const AUTHORS_LIST = [
+{ name: "Saar Tokas", bio: "A High School student who enjoys exploring topics like history, civics, and global issues. Writes simple and engaging articles for people to help them understand and stay informed about the world." },
+{ name: "Guransh Khattar", bio: "A High School student with a strong interest in learning and personal growth. Enjoys exploring different subjects and developing self thinking skills. Focuses on clear, structured learning and constantly work on improving oneself." },
+{ name: "Diva Arora", bio: "A High School student. Exploring perspectives through expression. Writes to transform everyday moments into evocative pieces." },
+{ name: "Shrre", bio: "A High-School Student of Humanities and an aspiring author. Navigating the shadows of Criminology and the light of Philosophy to decode the depths of humanity. Strives to thread crime and philosophy into the realms of human nature." },
+{ name: "Ishita Shah", bio: "Interrogating perspectives through language, drawn to the nuanced juxtaposition of the ephemeral and the enduring. Writes to transmute the quotidian into something contemplative, where expression becomes both inquiry and meaning." }
+];
+
+const CATEGORIES = ["Philosophy", "History", "Psychology", "Current Affairs", "Literature"];
+let darkMode = false;
+let isAuthenticated = false;
+let activeCategory = "All";
+let manuscripts = [];
+
+async function init() { 
+    lucide.createIcons(); 
+    renderAuthors(); 
+    renderFilters(); 
+    await fetchManuscripts();
+}
+
+async function fetchManuscripts() {
+    try {
+        const { data, error } = await supabaseClient
+            .from(TABLE_NAME)
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+            manuscripts = data.map(item => ({
+                id: item.id,
+                title: item.tittle, // Matches your 'tittle' column
+                content: item.content,
+                category: item.category,
+                author: item.author,
+                likes: item.likes || 0,
+                likedByMe: false,
+                comments: [],
+                date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            }));
+        }
+        renderPublications();
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        document.getElementById('publications-list').innerHTML = `
+            <div class="py-40 text-center opacity-30 font-serif italic text-xl">
+                Could not connect to the digital vault. Check console for details.
+            </div>`;
+    }
+}
+
+function showView(viewId) {
+    if (viewId === 'dashboard' && !isAuthenticated) { showView('admin'); return; }
+    
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hide'));
+    document.getElementById(`view-${viewId}`).classList.remove('hide');
+
+    document.querySelectorAll('.nav-item').forEach(link => {
+        const isActive = link.id === `nav-${viewId}`;
+        link.classList.toggle('opacity-100', isActive);
+        link.classList.toggle('opacity-40', !isActive);
+    });
+
+    if (viewId === 'publications') renderPublications();
+    window.scrollTo(0, 0);
+    lucide.createIcons();
+}
+
+function setCategoryFilter(cat) {
+    activeCategory = cat;
+    renderFilters();
+    renderPublications();
+}
+
+function handleLogin() {
+    if (document.getElementById('passcode-input').value === '98987') {
+        isAuthenticated = true;
+        document.getElementById('admin-btn-text').innerText = "Dashboard";
+        document.getElementById('admin-btn-icon').setAttribute('data-lucide', 'layout');
+        document.getElementById('login-error').classList.add('hide');
+        showView('dashboard');
+        resetVault();
+    } else {
+        document.getElementById('login-error').classList.remove('hide');
+    }
+}
+
+function logout() {
+    isAuthenticated = false;
+    document.getElementById('passcode-input').value = "";
+    document.getElementById('admin-btn-text').innerText = "Author Entrance";
+    document.getElementById('admin-btn-icon').setAttribute('data-lucide', 'key');
+    showView('home');
+}
+
+async function executePublish() {
+    const title = document.getElementById('manuscript-title').value;
+    const content = document.getElementById('manuscript-content').value;
+    const category = document.getElementById('manuscript-category').value;
+    const author = document.getElementById('manuscript-author').value;
+    const publishBtn = document.getElementById('publish-btn');
+
+    if (!title || !content || !category || !author) {
+        publishBtn.innerText = "Incomplete Thread";
+        setTimeout(() => publishBtn.innerText = "Secure to Vault", 2000);
+        return;
+    }
+
+    publishBtn.innerText = "Weaving to Cloud...";
+
+    try {
+        const { data, error } = await supabaseClient
+            .from(TABLE_NAME)
+            .insert([{
+                tittle: title, // Exact match for your schema
+                content: content,
+                category: category,
+                author: author,
+                likes: 0
+            }]);
+
+        if (error) throw error;
+
+        await fetchManuscripts();
+        document.getElementById('publish-success').classList.add('show');
+    } catch (err) {
+        console.error("Publish Error:", err);
+        publishBtn.innerText = "Error Woven. Check Console.";
+        setTimeout(() => publishBtn.innerText = "Secure to Vault", 3000);
+    }
+    lucide.createIcons();
+}
+
+async function toggleLike(id) {
+    const ms = manuscripts.find(m => m.id === id);
+    if (ms) {
+        const isCurrentlyLiked = ms.likedByMe;
+        const previousLikes = ms.likes;
+        
+        ms.likedByMe = !isCurrentlyLiked;
+        ms.likes = isCurrentlyLiked ? Math.max(0, previousLikes - 1) : previousLikes + 1;
+        renderPublications();
+
+        try {
+            const { error } = await supabaseClient
+                .from(TABLE_NAME)
+                .update({ likes: ms.likes })
+                .eq('id', id);
+            if (error) throw error;
+        } catch (err) {
+            console.error("Like Error:", err);
+            ms.likedByMe = isCurrentlyLiked;
+            ms.likes = previousLikes;
+            renderPublications();
+        }
+    }
+}
+
+function addComment(id) {
+    const input = document.getElementById(`comment-input-${id}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    const ms = manuscripts.find(m => m.id === id);
+    if (ms) {
+        ms.comments.push({
+            id: Date.now(),
+            text: text,
+            date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        input.value = "";
+        renderPublications();
+    }
+}
+
+async function deleteManuscript(id) {
+    if (!isAuthenticated) return;
+    
+    const originalManuscripts = [...manuscripts];
+    manuscripts = manuscripts.filter(m => m.id !== id);
+    renderPublications();
+
+    try {
+        const { error } = await supabaseClient
+            .from(TABLE_NAME)
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    } catch (err) {
+        console.error("Delete Error:", err);
+        manuscripts = originalManuscripts;
+        renderPublications();
+        alert("Delete failed. Check console for details.");
+    }
+}
+
+function renderPublications() {
+    const container = document.getElementById('publications-list');
+    const filtered = activeCategory === "All" ? manuscripts : manuscripts.filter(m => m.category === activeCategory);
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="py-40 text-center opacity-30 font-serif italic text-xl">No manuscripts found in the digital vault.</div>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(m => `
+        <article class="manuscript-box bg-current-alpha border-current-alpha view-transition overflow-hidden">
+            <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 border border-current-alpha rounded-full text-[9px] uppercase tracking-[0.2em] font-bold opacity-60">${m.category}</span>
+                    <span class="text-[9px] uppercase tracking-[0.3em] opacity-40 font-bold">${m.date}</span>
+                </div>
+                ${isAuthenticated ? `<button onclick="deleteManuscript(${m.id})" class="text-[9px] uppercase font-bold tracking-widest text-red-800 opacity-60 hover:opacity-100 flex items-center gap-2 transition-opacity"><i data-lucide="trash-2" class="w-3"></i> Rescind Manuscript</button>` : ''}
+            </div>
+            
+            <div class="mb-4 flex items-center gap-2 opacity-50">
+                <span class="text-[10px] uppercase font-bold tracking-[0.1em]">Woven By</span>
+                <span class="text-sm font-serif italic border-b border-current-alpha">${m.author}</span>
+            </div>
+
+            <h2 class="text-3xl font-serif italic mb-6 leading-tight">${m.title}</h2>
+            <div class="font-serif text-lg leading-relaxed opacity-80 whitespace-pre-wrap mb-10">${m.content}</div>
+            
+            <div class="border-t border-current-alpha pt-6 flex items-center gap-8">
+                <button onclick="toggleLike(${m.id})" class="interaction-btn ${m.likedByMe ? 'liked' : ''}">
+                    <i data-lucide="heart" class="w-4 ${m.likedByMe ? 'fill-current' : ''}"></i>
+                    <span>${m.likes} Likes</span>
+                </button>
+                <div class="interaction-btn">
+                    <i data-lucide="message-circle" class="w-4"></i>
+                    <span>${m.comments.length} Threads</span>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <div class="flex gap-4 mb-6">
+                    <input type="text" id="comment-input-${m.id}" placeholder="Add to the thread..." class="flex-1 text-sm border-b border-current-alpha py-2 italic font-serif opacity-70">
+                    <button onclick="addComment(${m.id})" class="text-[9px] uppercase font-bold tracking-[0.2em] opacity-40 hover:opacity-100">Woven</button>
+                </div>
+                <div class="space-y-4">
+                    ${m.comments.map(c => `
+                        <div class="comment-item text-sm opacity-60">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[8px] uppercase font-bold tracking-widest">Anonymous</span>
+                                <span class="text-[8px] opacity-60">${c.date}</span>
+                            </div>
+                            <p class="font-serif italic">${c.text}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </article>
+    `).join('');
+    lucide.createIcons();
+}
+
+function resetVault() {
+    document.getElementById('manuscript-title').value = "";
+    document.getElementById('manuscript-content').value = "";
+    document.getElementById('manuscript-category').value = "";
+    document.getElementById('manuscript-author').value = "";
+    document.getElementById('publish-success').classList.remove('show');
+    document.getElementById('publish-btn').innerText = "Secure to Vault";
+}
+
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    const body = document.getElementById('body');
+    body.classList.toggle('light-mode', !darkMode);
+    body.classList.toggle('dark-mode', darkMode);
+    document.getElementById('theme-toggle').innerHTML = darkMode ? `<i data-lucide="sun" class="w-[18px]"></i>` : `<i data-lucide="moon" class="w-[18px]"></i>`;
+    lucide.createIcons();
+}
+
+function renderFilters() {
+    const filters = ["All", ...CATEGORIES];
+    document.getElementById('category-filters').innerHTML = filters.map(cat => `
+        <button onclick="setCategoryFilter('${cat}')" class="px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all opacity-40 hover:opacity-100 ${activeCategory === cat ? 'active-filter' : ''}">${cat}</button>
+    `).join('');
+}
+
+function renderAuthors() {
+    document.getElementById('authors-grid').innerHTML = AUTHORS_LIST.map(a => `
+        <div class="group border-l border-current-alpha pl-8 transition-colors hover:border-current">
+            <h3 class="text-3xl font-serif italic mb-4">${a.name}</h3>
+            <p class="text-lg opacity-60 font-serif italic leading-relaxed">${a.bio}</p>
+        </div>
+    `).join('');
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
