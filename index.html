@@ -325,22 +325,32 @@ async function fetchManuscripts() {
         const { data, error } = await supabaseClient
             .from(TABLE_NAME)
             .select('*')
-            .order('id', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         if (data) {
-            manuscripts = data.map(item => ({
-                id: item.id,
-                title: item.tittle || item.title, // Handle both 'tittle' and 'title'
-                content: item.content,
-                category: item.category,
-                author: item.author,
-                likes: item.likes || 0,
-                likedByMe: false,
-                comments: [],
-                date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-            }));
+            manuscripts = data.map(item => {
+                // Use created_at from DB, or fallback to now if missing
+                const dbDate = item.created_at ? new Date(item.created_at) : new Date();
+                const formattedDate = dbDate.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+
+                return {
+                    id: item.id,
+                    title: item.tittle || item.title,
+                    content: item.content,
+                    category: item.category,
+                    author: item.author,
+                    likes: item.likes || 0,
+                    likedByMe: false,
+                    comments: [],
+                    date: formattedDate
+                };
+            });
         }
         renderPublications();
         renderRecentManuscripts();
@@ -423,6 +433,7 @@ async function executePublish() {
                 category: category,
                 author: author,
                 likes: 0
+                // created_at will be handled by Supabase default now()
             }]);
 
         if (error) throw error;
