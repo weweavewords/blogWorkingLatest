@@ -350,12 +350,12 @@ async function fetchManuscripts() {
                 return {
                     id: item.id,
                     title: item.tittle || item.title,
-                    content: item.content,
+                    content: (item.content || "").trim(),
                     category: item.category,
                     author: item.author,
                     likes: item.likes || 0,
                     likedByMe: false,
-                    isExpanded: false, // UI State for truncation
+                    isExpanded: false,
                     date: formattedDate
                 };
             });
@@ -428,7 +428,7 @@ async function executePublish() {
     try {
         const { error } = await supabaseClient
             .from(TABLE_NAME)
-            .insert([{ tittle: title, content, category, author, likes: 0 }]);
+            .insert([{ tittle: title, content: content.trim(), category, author, likes: 0 }]);
         if (error) throw error;
         await fetchManuscripts();
         document.getElementById('publish-success').classList.add('show');
@@ -520,9 +520,7 @@ function renderPublications() {
 
             <h2 class="text-3xl font-serif italic mb-6 leading-tight">${m.title}</h2>
             
-            <div class="font-serif text-lg leading-relaxed opacity-80 whitespace-pre-wrap mb-6 ${m.isExpanded ? '' : 'content-preview'}">
-                ${m.content}
-            </div>
+            <div class="font-serif text-lg leading-relaxed opacity-80 whitespace-pre-wrap mb-6 ${m.isExpanded ? '' : 'content-preview'}">${m.content}</div>
 
             ${isLong ? `
             <button onclick="toggleExpand(${m.id})" class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-100 mb-10 border-b border-current pb-0.5 hover:opacity-70 transition-opacity">
