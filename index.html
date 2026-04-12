@@ -88,7 +88,16 @@ transition: opacity 0.2s ease;
 .interaction-btn:hover { opacity: 1; }
 .liked { color: #cc0000; opacity: 1; }
 
-.comment-item { border-top: 1px solid rgba(128,128,128,0.1); padding-top: 1rem; margin-top: 1rem; }
+/* Truncation styles */
+.content-preview {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+}
+.content-expanded {
+    display: block !important;
+}
 </style>
 </head>
 <body class="light-mode" id="body">
@@ -175,7 +184,7 @@ Searching the digital vault...
 <p class="text-2xl font-serif opacity-50 italic leading-relaxed">Six minds, one loom. Dedicated to the preservation of nuance.</p>
 </div>
 
-<!-- Our Purpose Section (Moved here) -->
+<!-- Our Purpose Section -->
 <div class="max-w-4xl mb-32">
 <h2 class="text-3xl md:text-5xl font-serif italic mb-10">Our Purpose</h2>
 <div class="space-y-8 text-xl md:text-2xl font-serif leading-relaxed opacity-70">
@@ -184,7 +193,7 @@ Searching the digital vault...
 </div>
 </div>
 
-<!-- Core Principles Section (Moved here) -->
+<!-- Core Principles Section -->
 <div class="max-w-4xl mb-40">
 <h2 class="text-3xl md:text-5xl font-serif italic mb-16">Core Principles</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -331,7 +340,6 @@ async function fetchManuscripts() {
 
         if (data) {
             manuscripts = data.map(item => {
-                // Use created_at from DB, or fallback to now if missing
                 const dbDate = item.created_at ? new Date(item.created_at) : new Date();
                 const formattedDate = dbDate.toLocaleDateString('en-US', { 
                     month: 'long', 
@@ -347,7 +355,7 @@ async function fetchManuscripts() {
                     author: item.author,
                     likes: item.likes || 0,
                     likedByMe: false,
-                    comments: [],
+                    isExpanded: false, // UI State for truncation
                     date: formattedDate
                 };
             });
@@ -356,10 +364,7 @@ async function fetchManuscripts() {
         renderRecentManuscripts();
     } catch (err) {
         console.error("Fetch Error:", err);
-        const errorHtml = `
-            <div class="py-40 text-center opacity-30 font-serif italic text-xl">
-                Could not connect to the digital vault.
-            </div>`;
+        const errorHtml = `<div class="py-40 text-center opacity-30 font-serif italic text-xl">Vault connection interrupted.</div>`;
         document.getElementById('publications-list').innerHTML = errorHtml;
         document.getElementById('recent-manuscripts').innerHTML = errorHtml;
     }
@@ -367,16 +372,13 @@ async function fetchManuscripts() {
 
 function showView(viewId) {
     if (viewId === 'dashboard' && !isAuthenticated) { showView('admin'); return; }
-    
     document.querySelectorAll('.view').forEach(v => v.classList.add('hide'));
     document.getElementById(`view-${viewId}`).classList.remove('hide');
-
     document.querySelectorAll('.nav-item').forEach(link => {
         const isActive = link.id === `nav-${viewId}`;
         link.classList.toggle('opacity-100', isActive);
         link.classList.toggle('opacity-40', !isActive);
     });
-
     if (viewId === 'publications') renderPublications();
     window.scrollTo(0, 0);
     lucide.createIcons();
@@ -422,28 +424,25 @@ async function executePublish() {
         return;
     }
 
-    publishBtn.innerText = "Weaving to Cloud...";
-
+    publishBtn.innerText = "Weaving...";
     try {
-        const { data, error } = await supabaseClient
+        const { error } = await supabaseClient
             .from(TABLE_NAME)
-            .insert([{
-                tittle: title,
-                content: content,
-                category: category,
-                author: author,
-                likes: 0
-                // created_at will be handled by Supabase default now()
-            }]);
-
+            .insert([{ tittle: title, content, category, author, likes: 0 }]);
         if (error) throw error;
-
         await fetchManuscripts();
         document.getElementById('publish-success').classList.add('show');
     } catch (err) {
-        console.error("Publish Error:", err);
-        publishBtn.innerText = "Error Woven.";
+        publishBtn.innerText = "Error.";
         setTimeout(() => publishBtn.innerText = "Secure to Vault", 3000);
+    }
+}
+
+function toggleExpand(id) {
+    const ms = manuscripts.find(m => m.id === id);
+    if (ms) {
+        ms.isExpanded = !ms.isExpanded;
+        renderPublications();
     }
 }
 
@@ -452,20 +451,14 @@ async function toggleLike(id) {
     if (ms) {
         const isCurrentlyLiked = ms.likedByMe;
         const previousLikes = ms.likes;
-        
         ms.likedByMe = !isCurrentlyLiked;
         ms.likes = isCurrentlyLiked ? Math.max(0, previousLikes - 1) : previousLikes + 1;
         renderPublications();
         renderRecentManuscripts();
-
         try {
-            const { error } = await supabaseClient
-                .from(TABLE_NAME)
-                .update({ likes: ms.likes })
-                .eq('id', id);
+            const { error } = await supabaseClient.from(TABLE_NAME).update({ likes: ms.likes }).eq('id', id);
             if (error) throw error;
         } catch (err) {
-            console.error("Like Error:", err);
             ms.likedByMe = isCurrentlyLiked;
             ms.likes = previousLikes;
             renderPublications();
@@ -476,12 +469,10 @@ async function toggleLike(id) {
 function renderRecentManuscripts() {
     const container = document.getElementById('recent-manuscripts');
     const recent = manuscripts.slice(0, 3);
-
     if (recent.length === 0) {
-        container.innerHTML = `<div class="col-span-full py-20 text-center opacity-30 font-serif italic text-lg">The vault is currently empty.</div>`;
+        container.innerHTML = `<div class="col-span-full py-20 text-center opacity-30 font-serif italic text-lg">Empty vault.</div>`;
         return;
     }
-
     container.innerHTML = recent.map(m => `
         <div class="p-8 border border-current-alpha rounded-3xl bg-current-alpha flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer" onclick="showView('publications')">
             <div>
@@ -505,18 +496,21 @@ function renderPublications() {
     const filtered = activeCategory === "All" ? manuscripts : manuscripts.filter(m => m.category === activeCategory);
 
     if (filtered.length === 0) {
-        container.innerHTML = `<div class="py-40 text-center opacity-30 font-serif italic text-xl">No manuscripts found in the digital vault.</div>`;
+        container.innerHTML = `<div class="py-40 text-center opacity-30 font-serif italic text-xl">No reflections found for this thread.</div>`;
         return;
     }
 
-    container.innerHTML = filtered.map(m => `
+    container.innerHTML = filtered.map(m => {
+        const isLong = m.content.length > 400 || (m.content.match(/\n/g) || []).length > 3;
+        
+        return `
         <article class="manuscript-box bg-current-alpha border-current-alpha view-transition overflow-hidden">
             <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
                 <div class="flex items-center gap-3">
                     <span class="px-3 py-1 border border-current-alpha rounded-full text-[9px] uppercase tracking-[0.2em] font-bold opacity-60">${m.category}</span>
                     <span class="text-[9px] uppercase tracking-[0.3em] opacity-40 font-bold">${m.date}</span>
                 </div>
-                ${isAuthenticated ? `<button onclick="deleteManuscript(${m.id})" class="text-[9px] uppercase font-bold tracking-widest text-red-800 opacity-60 hover:opacity-100 flex items-center gap-2 transition-opacity"><i data-lucide="trash-2" class="w-3"></i> Rescind Manuscript</button>` : ''}
+                ${isAuthenticated ? `<button onclick="deleteManuscript(${m.id})" class="text-[9px] uppercase font-bold tracking-widest text-red-800 opacity-60 hover:opacity-100 flex items-center gap-2 transition-opacity"><i data-lucide="trash-2" class="w-3"></i> Rescind</button>` : ''}
             </div>
             
             <div class="mb-4 flex items-center gap-2 opacity-50">
@@ -525,7 +519,16 @@ function renderPublications() {
             </div>
 
             <h2 class="text-3xl font-serif italic mb-6 leading-tight">${m.title}</h2>
-            <div class="font-serif text-lg leading-relaxed opacity-80 whitespace-pre-wrap mb-10">${m.content}</div>
+            
+            <div class="font-serif text-lg leading-relaxed opacity-80 whitespace-pre-wrap mb-6 ${m.isExpanded ? '' : 'content-preview'}">
+                ${m.content}
+            </div>
+
+            ${isLong ? `
+            <button onclick="toggleExpand(${m.id})" class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-100 mb-10 border-b border-current pb-0.5 hover:opacity-70 transition-opacity">
+                ${m.isExpanded ? 'Fold Up' : 'Unfold Reflection'}
+            </button>
+            ` : '<div class="mb-10"></div>'}
             
             <div class="border-t border-current-alpha pt-6 flex items-center gap-8">
                 <button onclick="toggleLike(${m.id})" class="interaction-btn ${m.likedByMe ? 'liked' : ''}">
@@ -534,31 +537,21 @@ function renderPublications() {
                 </button>
             </div>
         </article>
-    `).join('');
+    `}).join('');
     lucide.createIcons();
 }
 
 async function deleteManuscript(id) {
-    if (!isAuthenticated) return;
-    if (!confirm("Are you sure you want to rescind this manuscript from the digital vault?")) return;
-    
+    if (!isAuthenticated || !confirm("Rescind this manuscript?")) return;
     try {
-        const { error } = await supabaseClient
-            .from(TABLE_NAME)
-            .delete()
-            .eq('id', id);
+        const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('id', id);
         if (error) throw error;
         await fetchManuscripts();
-    } catch (err) {
-        console.error("Delete Error:", err);
-    }
+    } catch (err) { console.error(err); }
 }
 
 function resetVault() {
-    document.getElementById('manuscript-title').value = "";
-    document.getElementById('manuscript-content').value = "";
-    document.getElementById('manuscript-category').value = "";
-    document.getElementById('manuscript-author').value = "";
+    ['manuscript-title', 'manuscript-content', 'manuscript-category', 'manuscript-author'].forEach(id => document.getElementById(id).value = "");
     document.getElementById('publish-success').classList.remove('show');
     document.getElementById('publish-btn').innerText = "Secure to Vault";
 }
