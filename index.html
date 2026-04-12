@@ -25,7 +25,7 @@ overflow-x: hidden;
 
 /* Mode Styles */
 body.light-mode { background-color: var(--light-bg); color: var(--light-text); }
-body.light-mode .glass { background-color: rgba(243, 235, 224, 0.85); border-bottom-color: rgba(85, 0, 0, 0.1); }
+body.light-mode .glass { background-color: rgba(243, 235, 224, 0.85); border-bottom-color: rgba(85, 0, 0, 0.15); }
 body.light-mode .btn-primary { background-color: var(--light-text); color: var(--light-bg); }
 body.light-mode .border-current-alpha { border-color: rgba(85, 0, 0, 0.15); }
 body.light-mode .bg-current-alpha { background-color: rgba(85, 0, 0, 0.03); }
@@ -107,7 +107,7 @@ We Weave Words
 <i data-lucide="book-open" class="w-5 md:hidden"></i>
 </button>
 <button onclick="showView('about')" class="nav-item opacity-40 hover:opacity-100 flex items-center" id="nav-about">
-<span class="hidden md:inline">Collective</span>
+<span class="hidden md:inline">About Us</span>
 <i data-lucide="users" class="w-5 md:hidden"></i>
 </button>
 </div>
@@ -129,7 +129,7 @@ We Weave Words
 <!-- Home View -->
 <section id="view-home" class="view view-transition">
 <!-- Hero -->
-<div class="h-[70vh] flex flex-col items-center justify-center text-center px-6 relative">
+<div class="h-[75vh] flex flex-col items-center justify-center text-center px-6 relative">
 <h1 class="text-5xl md:text-8xl font-serif font-light mb-6 tracking-tight">We Weave <span class="italic font-medium">Words</span></h1>
 <p class="text-lg md:text-2xl font-light opacity-60 max-w-2xl font-serif">Where thought dissolves into language.</p>
 <button onclick="showView('publications')" class="mt-12 group flex items-center gap-3 px-10 py-4 btn-primary rounded-full hover:scale-105 transition-all text-[10px] font-bold uppercase tracking-widest">
@@ -137,8 +137,46 @@ Explore Archives <i data-lucide="arrow-right" class="w-3.5 group-hover:translate
 </button>
 </div>
 
-<!-- Our Purpose Section -->
-<div class="max-w-4xl mx-auto px-6 py-24 border-t border-current-alpha">
+<!-- Recent Weavings Section -->
+<div class="max-w-6xl mx-auto px-6 py-24 border-t border-current-alpha">
+<div class="flex justify-between items-end mb-16">
+    <div>
+        <h2 class="text-3xl md:text-5xl font-serif italic">Recent Weavings</h2>
+        <p class="opacity-50 text-[10px] uppercase tracking-widest mt-2">The latest threads from the vault</p>
+    </div>
+    <button onclick="showView('publications')" class="hidden md:flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] opacity-40 hover:opacity-100 border-b border-current-alpha pb-1">
+        View All Archives
+    </button>
+</div>
+
+<div id="recent-manuscripts" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- Loaded via JS -->
+    <div class="col-span-full py-20 text-center opacity-30 font-serif italic text-lg">Retrieving recent reflections...</div>
+</div>
+</div>
+</section>
+
+<!-- Publications View -->
+<section id="view-publications" class="view hide max-w-5xl mx-auto px-6 py-24">
+<h1 class="text-5xl md:text-6xl font-serif mb-12">The Archives</h1>
+<div class="flex flex-wrap gap-3 mb-12 border-b border-current-alpha pb-10" id="category-filters"></div>
+
+<div id="publications-list" class="space-y-12">
+<div class="py-40 text-center opacity-30 font-serif italic text-xl">
+Searching the digital vault...
+</div>
+</div>
+</section>
+
+<!-- Collective View (About Us) -->
+<section id="view-about" class="view hide max-w-7xl mx-auto px-6 py-24">
+<div class="max-w-4xl mb-24">
+<h1 class="text-5xl md:text-7xl font-serif mb-8">About Us</h1>
+<p class="text-2xl font-serif opacity-50 italic leading-relaxed">Six minds, one loom. Dedicated to the preservation of nuance.</p>
+</div>
+
+<!-- Our Purpose Section (Moved here) -->
+<div class="max-w-4xl mb-32">
 <h2 class="text-3xl md:text-5xl font-serif italic mb-10">Our Purpose</h2>
 <div class="space-y-8 text-xl md:text-2xl font-serif leading-relaxed opacity-70">
 <p>We Weave Words is a sanctuary for deliberate thought. In an age of instant reactions, we choose the slow labor of weaving—taking complex threads of history, philosophy, and human nature and tying them into cohesive reflections.</p>
@@ -146,8 +184,8 @@ Explore Archives <i data-lucide="arrow-right" class="w-3.5 group-hover:translate
 </div>
 </div>
 
-<!-- Core Principles Section -->
-<div class="max-w-4xl mx-auto px-6 pb-32">
+<!-- Core Principles Section (Moved here) -->
+<div class="max-w-4xl mb-40">
 <h2 class="text-3xl md:text-5xl font-serif italic mb-16">Core Principles</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
 <div class="space-y-4">
@@ -167,39 +205,11 @@ Explore Archives <i data-lucide="arrow-right" class="w-3.5 group-hover:translate
 </div>
 </div>
 </div>
-</section>
 
-<!-- Publications View -->
-<section id="view-publications" class="view hide max-w-5xl mx-auto px-6 py-24">
-<h1 class="text-5xl md:text-6xl font-serif mb-12">The Archives</h1>
-<div class="flex flex-wrap gap-3 mb-12 border-b border-current-alpha pb-10" id="category-filters"></div>
-
-<div id="publications-list" class="space-y-12">
-<div class="py-40 text-center opacity-30 font-serif italic text-xl">
-Searching the digital vault...
-</div>
-</div>
-</section>
-
-<!-- Collective View -->
-<section id="view-about" class="view hide max-w-7xl mx-auto px-6 py-24">
-<div class="max-w-4xl mb-24">
-<h1 class="text-5xl md:text-7xl font-serif mb-8">The Collective</h1>
-<p class="text-2xl font-serif opacity-50 italic leading-relaxed">Six minds, one loom. Dedicated to the preservation of nuance.</p>
-</div>
-
+<h2 class="text-3xl md:text-5xl font-serif italic mb-12 border-t border-current-alpha pt-20">The Weavers</h2>
 <!-- Writers Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-12 mb-40" id="authors-grid"></div>
 
-<!-- Secluded Tech Specialist Section -->
-<div class="border-t border-current-alpha pt-24 max-w-2xl">
-<h4 class="text-[10px] font-bold uppercase tracking-[0.4em] opacity-30 mb-12">Technical Infrastructure</h4>
-<div class="group">
-<h3 class="text-3xl font-serif italic mb-4">Yashika Puri</h3>
-<p class="text-[11px] font-bold uppercase tracking-widest opacity-40 mb-4 italic">Our Tech Expert</p>
-<p class="text-lg opacity-60 font-serif italic leading-relaxed">A High School student, science student, and tech enthusiast who thrives on exploring new areas. Yashika ensures the digital loom remains steady, bridging the gap between intricate code and creative expression.</p>
-</div>
-</div>
 </section>
 
 <!-- Login View -->
@@ -287,7 +297,6 @@ const supabaseUrl = 'https://kvoxbfynuqxmdljjomad.supabase.co';
 const supabaseKey = 'sb_publishable_tTNxFRRnPuVWLF6oRHxUlQ_UVd7GJhV';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// IMPORTANT: CHANGE THIS TO MATCH YOUR EXACT SUPABASE TABLE NAME
 const TABLE_NAME = 'manuscripts'; 
 
 const AUTHORS_LIST = [
@@ -323,7 +332,7 @@ async function fetchManuscripts() {
         if (data) {
             manuscripts = data.map(item => ({
                 id: item.id,
-                title: item.tittle, // Matches your 'tittle' column
+                title: item.tittle || item.title, // Handle both 'tittle' and 'title'
                 content: item.content,
                 category: item.category,
                 author: item.author,
@@ -334,12 +343,15 @@ async function fetchManuscripts() {
             }));
         }
         renderPublications();
+        renderRecentManuscripts();
     } catch (err) {
         console.error("Fetch Error:", err);
-        document.getElementById('publications-list').innerHTML = `
+        const errorHtml = `
             <div class="py-40 text-center opacity-30 font-serif italic text-xl">
-                Could not connect to the digital vault. Check console for details.
+                Could not connect to the digital vault.
             </div>`;
+        document.getElementById('publications-list').innerHTML = errorHtml;
+        document.getElementById('recent-manuscripts').innerHTML = errorHtml;
     }
 }
 
@@ -406,7 +418,7 @@ async function executePublish() {
         const { data, error } = await supabaseClient
             .from(TABLE_NAME)
             .insert([{
-                tittle: title, // Exact match for your schema
+                tittle: title,
                 content: content,
                 category: category,
                 author: author,
@@ -419,10 +431,9 @@ async function executePublish() {
         document.getElementById('publish-success').classList.add('show');
     } catch (err) {
         console.error("Publish Error:", err);
-        publishBtn.innerText = "Error Woven. Check Console.";
+        publishBtn.innerText = "Error Woven.";
         setTimeout(() => publishBtn.innerText = "Secure to Vault", 3000);
     }
-    lucide.createIcons();
 }
 
 async function toggleLike(id) {
@@ -434,6 +445,7 @@ async function toggleLike(id) {
         ms.likedByMe = !isCurrentlyLiked;
         ms.likes = isCurrentlyLiked ? Math.max(0, previousLikes - 1) : previousLikes + 1;
         renderPublications();
+        renderRecentManuscripts();
 
         try {
             const { error } = await supabaseClient
@@ -450,42 +462,31 @@ async function toggleLike(id) {
     }
 }
 
-function addComment(id) {
-    const input = document.getElementById(`comment-input-${id}`);
-    const text = input.value.trim();
-    if (!text) return;
+function renderRecentManuscripts() {
+    const container = document.getElementById('recent-manuscripts');
+    const recent = manuscripts.slice(0, 3);
 
-    const ms = manuscripts.find(m => m.id === id);
-    if (ms) {
-        ms.comments.push({
-            id: Date.now(),
-            text: text,
-            date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-        input.value = "";
-        renderPublications();
+    if (recent.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-20 text-center opacity-30 font-serif italic text-lg">The vault is currently empty.</div>`;
+        return;
     }
-}
 
-async function deleteManuscript(id) {
-    if (!isAuthenticated) return;
-    
-    const originalManuscripts = [...manuscripts];
-    manuscripts = manuscripts.filter(m => m.id !== id);
-    renderPublications();
-
-    try {
-        const { error } = await supabaseClient
-            .from(TABLE_NAME)
-            .delete()
-            .eq('id', id);
-        if (error) throw error;
-    } catch (err) {
-        console.error("Delete Error:", err);
-        manuscripts = originalManuscripts;
-        renderPublications();
-        alert("Delete failed. Check console for details.");
-    }
+    container.innerHTML = recent.map(m => `
+        <div class="p-8 border border-current-alpha rounded-3xl bg-current-alpha flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer" onclick="showView('publications')">
+            <div>
+                <span class="text-[8px] uppercase font-bold tracking-widest opacity-40 mb-3 block">${m.category}</span>
+                <h3 class="text-2xl font-serif italic mb-4 leading-tight">${m.title}</h3>
+                <p class="text-sm font-serif opacity-60 line-clamp-3 mb-6">${m.content}</p>
+            </div>
+            <div class="flex justify-between items-center border-t border-current-alpha pt-4">
+                <span class="text-[9px] uppercase font-bold opacity-40 italic">${m.author}</span>
+                <div class="flex items-center gap-2 opacity-40 text-[9px] font-bold">
+                    <i data-lucide="heart" class="w-3"></i> ${m.likes}
+                </div>
+            </div>
+        </div>
+    `).join('');
+    lucide.createIcons();
 }
 
 function renderPublications() {
@@ -520,32 +521,26 @@ function renderPublications() {
                     <i data-lucide="heart" class="w-4 ${m.likedByMe ? 'fill-current' : ''}"></i>
                     <span>${m.likes} Likes</span>
                 </button>
-                <div class="interaction-btn">
-                    <i data-lucide="message-circle" class="w-4"></i>
-                    <span>${m.comments.length} Threads</span>
-                </div>
-            </div>
-
-            <div class="mt-8">
-                <div class="flex gap-4 mb-6">
-                    <input type="text" id="comment-input-${m.id}" placeholder="Add to the thread..." class="flex-1 text-sm border-b border-current-alpha py-2 italic font-serif opacity-70">
-                    <button onclick="addComment(${m.id})" class="text-[9px] uppercase font-bold tracking-[0.2em] opacity-40 hover:opacity-100">Woven</button>
-                </div>
-                <div class="space-y-4">
-                    ${m.comments.map(c => `
-                        <div class="comment-item text-sm opacity-60">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[8px] uppercase font-bold tracking-widest">Anonymous</span>
-                                <span class="text-[8px] opacity-60">${c.date}</span>
-                            </div>
-                            <p class="font-serif italic">${c.text}</p>
-                        </div>
-                    `).join('')}
-                </div>
             </div>
         </article>
     `).join('');
     lucide.createIcons();
+}
+
+async function deleteManuscript(id) {
+    if (!isAuthenticated) return;
+    if (!confirm("Are you sure you want to rescind this manuscript from the digital vault?")) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from(TABLE_NAME)
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        await fetchManuscripts();
+    } catch (err) {
+        console.error("Delete Error:", err);
+    }
 }
 
 function resetVault() {
