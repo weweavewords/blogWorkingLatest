@@ -248,16 +248,10 @@ Searching the digital vault...
 <h3 class="font-serif text-xl mb-8 italic">New Weaving</h3>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+<!-- CHANGED: Replaced Select with Text Input -->
 <div>
 <label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Identify Yourself</label>
-<select id="manuscript-author" class="w-full border-b border-current-alpha py-2 font-serif italic text-lg cursor-pointer">
-<option value="" disabled selected>Choose Author...</option>
-<option value="Saar Tokas">Saar Tokas</option>
-<option value="Guransh Khattar">Guransh Khattar</option>
-<option value="Diva Arora">Diva Arora</option>
-<option value="Shrre">Shrre</option>
-<option value="Ishita Shah">Ishita Shah</option>
-</select>
+<input type="text" id="manuscript-author" placeholder="Enter author name..." class="w-full bg-transparent border-b border-current-alpha py-2 font-serif italic text-lg text-inherit">
 </div>
 <div>
 <label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Select Category</label>
@@ -326,6 +320,48 @@ async function init() {
     renderAuthors(); 
     renderFilters(); 
     await fetchManuscripts();
+    handleRouting(); // NEW: Check for shared links on load
+}
+
+// NEW: Function to handle direct links to posts
+function handleRouting() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('post');
+    
+    if (postId) {
+        const post = manuscripts.find(m => m.id == postId);
+        if (post) {
+            post.isExpanded = true; // Automatically expand the shared post
+            showView('publications'); // Switch to publications view
+            
+            // Wait slightly for DOM to render, then scroll to the specific post
+            setTimeout(() => {
+                const postElement = document.getElementById('post-' + postId);
+                if (postElement) {
+                    postElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 200);
+        }
+    }
+}
+
+// NEW: Function to copy the shareable link
+function sharePost(id) {
+    // Generate the URL with the query parameter
+    const url = window.location.origin + window.location.pathname + '?post=' + id;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(url).then(() => {
+        // Temporarily change button text to show success
+        const span = document.getElementById(`share-text-${id}`);
+        if (span) {
+            const originalText = span.innerText;
+            span.innerText = "Copied!";
+            setTimeout(() => {
+                span.innerText = originalText;
+            }, 2000);
+        }
+    });
 }
 
 async function fetchManuscripts() {
@@ -379,7 +415,13 @@ function showView(viewId) {
         link.classList.toggle('opacity-40', !isActive);
     });
     if (viewId === 'publications') renderPublications();
-    window.scrollTo(0, 0);
+    
+    // Only scroll to top if we aren't handling a shared link routing
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.get('post') || viewId !== 'publications') {
+        window.scrollTo(0, 0);
+    }
+    
     lucide.createIcons();
 }
 
@@ -387,6 +429,12 @@ function setCategoryFilter(cat) {
     activeCategory = cat;
     renderFilters();
     renderPublications();
+    
+    // Clear URL parameter when filtering to prevent confusion
+    if (window.history.replaceState) {
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+    }
 }
 
 function handleLogin() {
@@ -503,7 +551,8 @@ function renderPublications() {
         const isLong = m.content.length > 400 || (m.content.match(/\n/g) || []).length > 3;
         
         return `
-        <article class="manuscript-box bg-current-alpha border-current-alpha view-transition overflow-hidden">
+        <!-- NEW: Added id="post-ID" so we can scroll directly to it -->
+        <article id="post-${m.id}" class="manuscript-box bg-current-alpha border-current-alpha view-transition overflow-hidden">
             <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
                 <div class="flex items-center gap-3">
                     <span class="px-3 py-1 border border-current-alpha rounded-full text-[9px] uppercase tracking-[0.2em] font-bold opacity-60">${m.category}</span>
@@ -531,6 +580,12 @@ function renderPublications() {
                 <button onclick="toggleLike(${m.id})" class="interaction-btn ${m.likedByMe ? 'liked' : ''}">
                     <i data-lucide="heart" class="w-4 ${m.likedByMe ? 'fill-current' : ''}"></i>
                     <span>${m.likes} Likes</span>
+                </button>
+                
+                <!-- NEW: Share Button -->
+                <button onclick="sharePost(${m.id})" class="interaction-btn">
+                    <i data-lucide="share-2" class="w-4"></i>
+                    <span id="share-text-${m.id}">Share</span>
                 </button>
             </div>
         </article>
