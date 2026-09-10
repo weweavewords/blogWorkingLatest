@@ -226,11 +226,24 @@ Searching the digital vault...
 
 <!-- Login View -->
 <section id="view-admin" class="view hide min-h-[70vh] flex flex-col items-center justify-center p-6">
-<div class="max-w-md w-full p-12 rounded-[2.5rem] border border-current-alpha bg-current-alpha">
-<h2 class="text-xl font-serif text-center mb-10 tracking-widest uppercase opacity-60">Security Protocol</h2>
-<input type="password" id="passcode-input" placeholder="•••••" class="w-full p-5 rounded-2xl mb-6 bg-transparent border border-current-alpha text-center text-2xl tracking-[0.5em] text-inherit">
-<div id="login-error" class="text-[9px] uppercase font-bold text-center mb-6 hide text-red-700">Incorrect Passkey.</div>
-<button onclick="handleLogin()" class="w-full py-5 btn-primary rounded-2xl font-bold uppercase text-[10px] tracking-[0.3em]">Authenticate</button>
+<div class="max-w-md w-full p-10 md:p-12 rounded-[2.5rem] border border-current-alpha bg-current-alpha">
+<h2 class="text-xl font-serif text-center mb-8 tracking-widest uppercase opacity-60">Author Entrance</h2>
+
+<div class="space-y-6 mb-8">
+  <div>
+    <label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Author Email</label>
+    <input type="email" id="login-email" placeholder="writer@example.com" class="w-full p-4 rounded-2xl bg-transparent border border-current-alpha font-serif italic text-base text-inherit">
+  </div>
+  
+  <div>
+    <label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Password</label>
+    <input type="password" id="login-password" placeholder="••••••••" class="w-full p-4 rounded-2xl bg-transparent border border-current-alpha font-serif text-base text-inherit">
+  </div>
+</div>
+
+<div id="login-error" class="text-[9px] uppercase font-bold text-center mb-6 hide text-red-700">Invalid Login Credentials.</div>
+
+<button onclick="handleLogin()" id="auth-submit-btn" class="w-full py-5 btn-primary rounded-2xl font-bold uppercase text-[10px] tracking-[0.3em]">Authenticate</button>
 </div>
 </section>
 
@@ -323,8 +336,18 @@ async function init() {
     lucide.createIcons(); 
     renderAuthors(); 
     renderFilters(); 
+    await checkAuthSession();
     await fetchManuscripts();
-    handleRouting(); // NEW: Check for shared links on load
+    handleRouting();
+}
+
+async function checkAuthSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        isAuthenticated = true;
+        document.getElementById('admin-btn-text').innerText = "Dashboard";
+        document.getElementById('admin-btn-icon').setAttribute('data-lucide', 'layout');
+    }
 }
 
 // NEW: Function to handle direct links to posts
@@ -441,22 +464,41 @@ function setCategoryFilter(cat) {
     }
 }
 
-function handleLogin() {
-    if (document.getElementById('passcode-input').value === '98987') {
+async function handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('auth-submit-btn');
+    const errorElement = document.getElementById('login-error');
+
+    if (!email || !password) return;
+
+    btn.innerText = "Authenticating...";
+    
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        errorElement.innerText = error.message;
+        errorElement.classList.remove('hide');
+        btn.innerText = "Authenticate";
+    } else {
         isAuthenticated = true;
+        errorElement.classList.add('hide');
+        btn.innerText = "Authenticate";
         document.getElementById('admin-btn-text').innerText = "Dashboard";
         document.getElementById('admin-btn-icon').setAttribute('data-lucide', 'layout');
-        document.getElementById('login-error').classList.add('hide');
         showView('dashboard');
         resetVault();
-    } else {
-        document.getElementById('login-error').classList.remove('hide');
     }
 }
 
-function logout() {
+async function logout() {
+    await supabaseClient.auth.signOut();
     isAuthenticated = false;
-    document.getElementById('passcode-input').value = "";
+    document.getElementById('login-email').value = "";
+    document.getElementById('login-password').value = "";
     document.getElementById('admin-btn-text').innerText = "Author Entrance";
     document.getElementById('admin-btn-icon').setAttribute('data-lucide', 'key');
     showView('home');
