@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>We Weave Words | A Closed Collective</title>
-<link rel="icon" type="image/svg+xml" href="logo.svg">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <!-- Add Supabase JS Library -->
@@ -106,10 +105,8 @@ transition: opacity 0.2s ease;
 <!-- Navigation -->
 <nav class="fixed top-0 w-full z-50 transition-all duration-500 border-b glass h-16" id="navbar">
 <div class="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
-    
-<div class="flex items-center gap-2.5 text-lg md:text-xl font-serif font-bold tracking-tight cursor-pointer hover:opacity-70 transition-opacity" onclick="showView('home')">
-  <img src="logo.svg" alt="We Weave Words Logo" class="h-[2.2em] w-auto" />
-  <span>We Weave Words</span>
+<div class="text-lg md:text-xl font-serif font-bold tracking-tight cursor-pointer hover:opacity-70 transition-opacity" onclick="showView('home')">
+We Weave Words
 </div>
 
 <div class="flex items-center space-x-3 md:space-x-10">
@@ -184,7 +181,7 @@ Searching the digital vault...
 <section id="view-about" class="view hide max-w-7xl mx-auto px-6 py-24">
 <div class="max-w-4xl mb-24">
 <h1 class="text-5xl md:text-7xl font-serif mb-8">About Us</h1>
-<p class="text-2xl font-serif opacity-50 italic leading-relaxed">Four minds, one loom. Dedicated to the preservation of nuance.</p>
+<p class="text-2xl font-serif opacity-50 italic leading-relaxed">Six minds, one loom. Dedicated to the preservation of nuance.</p>
 </div>
 
 <!-- Our Purpose Section -->
@@ -218,7 +215,7 @@ Searching the digital vault...
 </div>
 </div>
 
-<h2 class="text-3xl md:text-5xl font-serif italic mb-12 border-t border-current-alpha pt-20">The Founders</h2>
+<h2 class="text-3xl md:text-5xl font-serif italic mb-12 border-t border-current-alpha pt-20">The Weavers</h2>
 <!-- Writers Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-12 mb-40" id="authors-grid"></div>
 
@@ -251,7 +248,6 @@ Searching the digital vault...
 <h3 class="font-serif text-xl mb-8 italic">New Weaving</h3>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-<!-- CHANGED: Replaced Select with Text Input -->
 <div>
 <label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Identify Yourself</label>
 <input type="text" id="manuscript-author" placeholder="Enter author name..." class="w-full bg-transparent border-b border-current-alpha py-2 font-serif italic text-lg text-inherit">
@@ -265,6 +261,7 @@ Searching the digital vault...
 <option value="Psychology">Psychology</option>
 <option value="Current Affairs">Current Affairs</option>
 <option value="Literature">Literature</option>
+<option value="Science">Science</option>
 </select>
 </div>
 </div>
@@ -312,7 +309,7 @@ const AUTHORS_LIST = [
 { name: "Ishita Shah", bio: "Interrogating perspectives through language, drawn to the nuanced juxtaposition of the ephemeral and the enduring. Writes to transmute the quotidian into something contemplative, where expression becomes both inquiry and meaning." }
 ];
 
-const CATEGORIES = ["Philosophy", "History", "Psychology", "Current Affairs", "Literature"];
+const CATEGORIES = ["Philosophy", "History", "Psychology", "Current Affairs", "Literature", "Science"];
 let darkMode = false;
 let isAuthenticated = false;
 let activeCategory = "All";
@@ -323,10 +320,9 @@ async function init() {
     renderAuthors(); 
     renderFilters(); 
     await fetchManuscripts();
-    handleRouting(); // NEW: Check for shared links on load
+    handleRouting();
 }
 
-// NEW: Function to handle direct links to posts
 function handleRouting() {
     const urlParams = new URLSearchParams(window.location.search);
     const postId = urlParams.get('post');
@@ -334,10 +330,9 @@ function handleRouting() {
     if (postId) {
         const post = manuscripts.find(m => m.id == postId);
         if (post) {
-            post.isExpanded = true; // Automatically expand the shared post
-            showView('publications'); // Switch to publications view
+            post.isExpanded = true;
+            showView('publications');
             
-            // Wait slightly for DOM to render, then scroll to the specific post
             setTimeout(() => {
                 const postElement = document.getElementById('post-' + postId);
                 if (postElement) {
@@ -348,14 +343,10 @@ function handleRouting() {
     }
 }
 
-// NEW: Function to copy the shareable link
 function sharePost(id) {
-    // Generate the URL with the query parameter
     const url = window.location.origin + window.location.pathname + '?post=' + id;
     
-    // Copy to clipboard
     navigator.clipboard.writeText(url).then(() => {
-        // Temporarily change button text to show success
         const span = document.getElementById(`share-text-${id}`);
         if (span) {
             const originalText = span.innerText;
@@ -419,7 +410,6 @@ function showView(viewId) {
     });
     if (viewId === 'publications') renderPublications();
     
-    // Only scroll to top if we aren't handling a shared link routing
     const urlParams = new URLSearchParams(window.location.search);
     if (!urlParams.get('post') || viewId !== 'publications') {
         window.scrollTo(0, 0);
@@ -433,7 +423,6 @@ function setCategoryFilter(cat) {
     renderFilters();
     renderPublications();
     
-    // Clear URL parameter when filtering to prevent confusion
     if (window.history.replaceState) {
         const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
         window.history.replaceState({path: cleanUrl}, '', cleanUrl);
@@ -554,7 +543,6 @@ function renderPublications() {
         const isLong = m.content.length > 400 || (m.content.match(/\n/g) || []).length > 3;
         
         return `
-        <!-- NEW: Added id="post-ID" so we can scroll directly to it -->
         <article id="post-${m.id}" class="manuscript-box bg-current-alpha border-current-alpha view-transition overflow-hidden">
             <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
                 <div class="flex items-center gap-3">
@@ -585,7 +573,6 @@ function renderPublications() {
                     <span>${m.likes} Likes</span>
                 </button>
                 
-                <!-- NEW: Share Button -->
                 <button onclick="sharePost(${m.id})" class="interaction-btn">
                     <i data-lucide="share-2" class="w-4"></i>
                     <span id="share-text-${m.id}">Share</span>
