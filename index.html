@@ -7,7 +7,6 @@
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<!-- Add Supabase JS Library -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,200..900;1,200..900&family=Inter:wght@100..900&display=swap" rel="stylesheet">
 <style>
@@ -108,7 +107,7 @@ transition: opacity 0.2s ease;
 <div class="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
     
 <div class="flex items-center gap-2.5 text-lg md:text-xl font-serif font-bold tracking-tight cursor-pointer hover:opacity-70 transition-opacity" onclick="showView('home')">
-  <img src="logo.svg" alt="We Weave Words Logo" class="h-[2.2em] w-auto" />
+  <img src="logo.svg" alt="We Weave Words Logo" class="h-[2.2em] w-auto" onerror="this.style.display='none'"/>
   <span>We Weave Words</span>
 </div>
 
@@ -264,7 +263,6 @@ Searching the digital vault...
 <h3 class="font-serif text-xl mb-8 italic">New Weaving</h3>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-<!-- CHANGED: Replaced Select with Text Input -->
 <div>
 <label class="text-[9px] uppercase tracking-widest font-bold opacity-40 block mb-2">Identify Yourself</label>
 <input type="text" id="manuscript-author" placeholder="Enter author name..." class="w-full bg-transparent border-b border-current-alpha py-2 font-serif italic text-lg text-inherit">
@@ -306,6 +304,19 @@ Secure to Vault
 </section>
 </main>
 
+<!-- Custom Confirm Modal -->
+<div id="confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm hide transition-opacity">
+    <div class="bg-current-alpha border border-current-alpha p-8 rounded-[2rem] max-w-sm w-full mx-4 text-center glass shadow-2xl">
+        <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-4 opacity-70"></i>
+        <h3 class="font-serif text-2xl italic mb-2">Rescind Manuscript?</h3>
+        <p class="text-sm opacity-60 mb-8 font-serif leading-relaxed">This action will permanently unravel this thread from the digital vault. It cannot be undone.</p>
+        <div class="flex justify-center gap-4">
+            <button onclick="closeConfirmModal()" class="px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">Cancel</button>
+            <button onclick="executeDelete()" class="px-6 py-3 btn-primary rounded-full text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all">Confirm Removal</button>
+        </div>
+    </div>
+</div>
+
 <footer class="py-20 border-t border-current-alpha text-center opacity-40 mt-32">
 <p class="font-serif italic text-lg mb-4">"Language is the thread, thought is the needle."</p>
 <p class="text-[10px] uppercase tracking-[0.3em]">© 2026 We Weave Words · A Closed Collective · All rights reserved</p>
@@ -331,6 +342,7 @@ let darkMode = false;
 let isAuthenticated = false;
 let activeCategory = "All";
 let manuscripts = [];
+let deleteTargetId = null;
 
 async function init() { 
     lucide.createIcons(); 
@@ -350,7 +362,7 @@ async function checkAuthSession() {
     }
 }
 
-// NEW: Function to handle direct links to posts
+// Function to handle direct links to posts
 function handleRouting() {
     const urlParams = new URLSearchParams(window.location.search);
     const postId = urlParams.get('post');
@@ -372,7 +384,7 @@ function handleRouting() {
     }
 }
 
-// NEW: Function to copy the shareable link
+// Function to copy the shareable link
 function sharePost(id) {
     // Generate the URL with the query parameter
     const url = window.location.origin + window.location.pathname + '?post=' + id;
@@ -433,7 +445,12 @@ async function fetchManuscripts() {
 }
 
 function showView(viewId) {
+    // Prevent unauthenticated access to the dashboard
     if (viewId === 'dashboard' && !isAuthenticated) { showView('admin'); return; }
+    
+    // THE FIX: If logged in and clicking the "Author Entrance" button, show dashboard instead
+    if (viewId === 'admin' && isAuthenticated) { showView('dashboard'); return; }
+
     document.querySelectorAll('.view').forEach(v => v.classList.add('hide'));
     document.getElementById(`view-${viewId}`).classList.remove('hide');
     document.querySelectorAll('.nav-item').forEach(link => {
@@ -559,6 +576,30 @@ async function toggleLike(id) {
     }
 }
 
+// Improved Delete Logic avoiding native confirm() dialogue 
+function deleteManuscript(id) {
+    if (!isAuthenticated) return;
+    deleteTargetId = id;
+    document.getElementById('confirm-modal').classList.remove('hide');
+}
+
+function closeConfirmModal() {
+    deleteTargetId = null;
+    document.getElementById('confirm-modal').classList.add('hide');
+}
+
+async function executeDelete() {
+    if (!deleteTargetId || !isAuthenticated) return;
+    
+    try {
+        const id = deleteTargetId;
+        closeConfirmModal();
+        const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('id', id);
+        if (error) throw error;
+        await fetchManuscripts();
+    } catch (err) { console.error(err); }
+}
+
 function renderRecentManuscripts() {
     const container = document.getElementById('recent-manuscripts');
     const recent = manuscripts.slice(0, 3);
@@ -597,7 +638,6 @@ function renderPublications() {
         const isLong = m.content.length > 400 || (m.content.match(/\n/g) || []).length > 3;
         
         return `
-        <!-- NEW: Added id="post-ID" so we can scroll directly to it -->
         <article id="post-${m.id}" class="manuscript-box bg-current-alpha border-current-alpha view-transition overflow-hidden">
             <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
                 <div class="flex items-center gap-3">
@@ -628,7 +668,6 @@ function renderPublications() {
                     <span>${m.likes} Likes</span>
                 </button>
                 
-                <!-- NEW: Share Button -->
                 <button onclick="sharePost(${m.id})" class="interaction-btn">
                     <i data-lucide="share-2" class="w-4"></i>
                     <span id="share-text-${m.id}">Share</span>
@@ -637,15 +676,6 @@ function renderPublications() {
         </article>
     `}).join('');
     lucide.createIcons();
-}
-
-async function deleteManuscript(id) {
-    if (!isAuthenticated || !confirm("Rescind this manuscript?")) return;
-    try {
-        const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('id', id);
-        if (error) throw error;
-        await fetchManuscripts();
-    } catch (err) { console.error(err); }
 }
 
 function resetVault() {
