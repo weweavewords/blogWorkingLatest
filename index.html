@@ -36,6 +36,10 @@ body.dark-mode .btn-primary { background-color: var(--dark-text); color: var(--d
 body.dark-mode .border-current-alpha { border-color: rgba(243, 235, 224, 0.15); }
 body.dark-mode .bg-current-alpha { background-color: rgba(243, 235, 224, 0.05); }
 
+.modal-surface { transition: background-color 0.5s ease, color 0.5s ease; }
+body.light-mode .modal-surface { background-color: var(--light-bg); color: var(--light-text); }
+body.dark-mode .modal-surface { background-color: var(--dark-bg); color: var(--dark-text); }
+
 .font-serif { font-family: 'Crimson Pro', serif; }
 .hide { display: none !important; }
 .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
@@ -306,7 +310,7 @@ Secure to Vault
 
 <!-- Custom Confirm Modal -->
 <div id="confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm hide transition-opacity">
-    <div class="bg-current-alpha border border-current-alpha p-8 rounded-[2rem] max-w-sm w-full mx-4 text-center glass shadow-2xl">
+    <div class="modal-surface border border-current-alpha p-8 rounded-[2rem] max-w-sm w-full mx-4 text-center shadow-2xl">
         <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-4 opacity-70"></i>
         <h3 class="font-serif text-2xl italic mb-2">Rescind Manuscript?</h3>
         <p class="text-sm opacity-60 mb-8 font-serif leading-relaxed">This action will permanently unravel this thread from the digital vault. It cannot be undone.</p>
