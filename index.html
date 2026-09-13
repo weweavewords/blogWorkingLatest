@@ -102,6 +102,11 @@ transition: opacity 0.2s ease;
 .content-expanded {
     display: block !important;
 }
+
+/* Graph Animation utility */
+.graph-bar {
+    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
 </style>
 </head>
 <body class="light-mode" id="body">
@@ -223,7 +228,16 @@ Searching the digital vault...
 
 <h2 class="text-3xl md:text-5xl font-serif italic mb-12 border-t border-current-alpha pt-20">The Founders</h2>
 <!-- Writers Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-12 mb-40" id="authors-grid"></div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-12 mb-32" id="authors-grid"></div>
+
+<!-- Contributions Graph Section -->
+<div class="max-w-4xl mb-4 mt-32 mx-auto">
+    
+    
+    <div id="author-stats-graph" class="h-64 flex items-end justify-around gap-2 sm:gap-6 border-b border-current-alpha pb-0 px-2 md:px-8">
+        <!-- Rendered via JS -->
+    </div>
+</div>
 
 </section>
 
@@ -337,7 +351,7 @@ Secure to Vault
     </div>
 </div>
 
-<footer class="py-20 border-t border-current-alpha text-center opacity-40 mt-32">
+<footer class="py-12 border-t border-current-alpha text-center opacity-40 mt-8">
 <p class="font-serif italic text-lg mb-4">"Language is the thread, thought is the needle."</p>
 <p class="text-[10px] uppercase tracking-[0.3em]">© 2026 We Weave Words · A Closed Collective · All rights reserved</p>
 </footer>
@@ -456,6 +470,7 @@ async function fetchManuscripts() {
         }
         renderPublications();
         renderRecentManuscripts();
+        renderAuthorStats(); // Render the new stats graph when data changes
     } catch (err) {
         console.error("Fetch Error:", err);
         const errorHtml = `<div class="py-40 text-center opacity-30 font-serif italic text-xl">Vault connection interrupted.</div>`;
@@ -484,6 +499,11 @@ function showView(viewId) {
     const urlParams = new URLSearchParams(window.location.search);
     if (!urlParams.get('post') || viewId !== 'publications') {
         window.scrollTo(0, 0);
+    }
+    
+    // Render stats with slight delay to trigger animation smoothly if heading to 'about'
+    if (viewId === 'about') {
+        setTimeout(renderAuthorStats, 50); 
     }
     
     lucide.createIcons();
@@ -760,6 +780,44 @@ function renderAuthors() {
             <p class="text-lg opacity-60 font-serif italic leading-relaxed">${a.bio}</p>
         </div>
     `).join('');
+}
+
+function renderAuthorStats() {
+    const container = document.getElementById('author-stats-graph');
+    if (!container) return;
+
+    // Calculate contribution counts matching author name loosely (case insensitive)
+    const authorData = AUTHORS_LIST.map(author => {
+        const count = manuscripts.filter(m => 
+            m.author.toLowerCase().trim() === author.name.toLowerCase().trim()
+        ).length;
+        return { name: author.name, count: count };
+    });
+
+    // Find the maximum count to set relative graph height, default to 1 to avoid Zero Division
+    const maxCount = Math.max(...authorData.map(a => a.count), 1);
+
+    container.innerHTML = authorData.map(a => {
+        // Guaranteeing a minimal 2% height so empty bars remain aesthetically visible on the axis
+        const heightPct = Math.max((a.count / maxCount) * 100, 2);
+        const firstName = a.name.split(' ')[0]; // Concise labels for mobile friendliness
+        
+        return `
+        <div class="flex-1 flex flex-col items-center justify-end h-full group cursor-default">
+            <span class="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 mb-3">${a.count} Threads</span>
+            <div class="w-full max-w-[40px] md:max-w-[60px] bg-current opacity-[0.08] group-hover:opacity-30 graph-bar rounded-t-sm" style="height: 0%;" data-target-height="${heightPct}%"></div>
+            <span class="text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-50 mt-4 text-center h-8">${firstName}</span>
+        </div>
+        `;
+    }).join('');
+    
+    // Trigger entrance animation for graph bars
+    setTimeout(() => {
+        const bars = container.querySelectorAll('.graph-bar');
+        bars.forEach(bar => {
+            bar.style.height = bar.getAttribute('data-target-height');
+        });
+    }, 100);
 }
 
 window.onload = init;
